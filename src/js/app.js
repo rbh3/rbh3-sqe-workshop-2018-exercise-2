@@ -1,6 +1,8 @@
 import $ from 'jquery';
 import {parseCode} from './code-analyzer';
 import * as myParser from './myParser';
+import * as mySymbolic from './symbolicSubstitution';
+
 
 let myTable;
 
@@ -9,23 +11,31 @@ $(document).ready(function () {
         let codeToParse = $('#codePlaceholder').val();
         let parsedCode = parseCode(codeToParse);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
-        myTable=myParser.parserStart(parsedCode);
-        $('#table').append(objectToTable());
+        //myTable=myParser.parserStart(parsedCode);
+        //$('#table').append(objectToTable());
+        mySymbolic.argsParser($('#input').val());
+        printFunction(mySymbolic.subtitution(codeToParse,parsedCode));
     });
 });
 
-const objectToTable= ()=> {
-    clear();
-    let tableHtml = '<tr class="mytr"><th class="myTh">Line #</th><th class="myTh">Type</th><th class="myTh">Name</th><th class="myTh">Condition</th><th class="myTh">Value</th></tr>';
-    myTable.forEach(row => {
-        if(row!==undefined)
-            tableHtml += `<tr class="mytr"><td class="myTd">${row.Line}</td><td class="myTd">${row.Type}</td><td class="myTd">${row.Name}</td><td class="myTd">${row.Condition}</td><td class="myTd">${row.Value}</td></tr>}`;
-    });
-    return tableHtml;
+const printFunction= (lines)=> {
+    const getColor=(line,indx,colorsMap)=>{
+        if(line.includes('if')|| line.includes('else'))
+        {
+            return colorsMap[indx] ? 'green' : 'red';
+        }
+        return 'white';
+    };
+    $('#res').innerHTML = '';
+    const colorsMap=mySymbolic.getColorsMap();
+    let ifIndex=0;
+    for(let i=0;i<lines.length;i++){
+        const line=lines[i];
+        const color=getColor(line,ifIndex,colorsMap);
+        if(color !='white'){
+            ifIndex++;
+        }
+        $('#res').append($('<div>'+line+'</div>').addClass(color));
+    }
 };
 
-const clear= ()=>{
-    $('.mytr').remove();
-    $('.myTh').remove();
-    $('.myTd').remove();
-};
