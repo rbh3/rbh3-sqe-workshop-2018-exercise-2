@@ -1,19 +1,17 @@
 import $ from 'jquery';
 import {parseCode} from './code-analyzer';
-import * as myParser from './myParser';
 import * as mySymbolic from './symbolicSubstitution';
-
-
-let myTable;
 
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
         let codeToParse = $('#codePlaceholder').val();
         let parsedCode = parseCode(codeToParse);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
-        //myTable=myParser.parserStart(parsedCode);
-        //$('#table').append(objectToTable());
+        mySymbolic.initVarMap();
         mySymbolic.argsParser($('#input').val());
+        $('.red').remove();
+        $('.green').remove();
+        $('.white').remove();
         printFunction(mySymbolic.subtitution(codeToParse,parsedCode));
     });
 });
@@ -26,7 +24,6 @@ const printFunction= (lines)=> {
         }
         return 'white';
     };
-    $('#res').innerHTML = '';
     const colorsMap=mySymbolic.getColorsMap();
     let ifIndex=0;
     for(let i=0;i<lines.length;i++){

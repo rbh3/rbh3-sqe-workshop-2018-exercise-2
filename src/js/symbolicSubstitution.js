@@ -1,3 +1,5 @@
+import * as myParser from './myParser';
+
 let lineCount=1;
 let myTable=[];
 let varMap;
@@ -9,12 +11,12 @@ const init = ()=>{
     linesDic=[];
 };
 
-const setVarMap =  map => varMap=map;
+export const initVarMap = () => varMap=[];
 
 export const getColorsMap= () => colorsMap;
 
 const addToDic= (key,val,dic)=>{
-    val=replaceVariables(val,dic);
+    val=replaceVals(val,dic);
     dic[key]=val;
 };
 
@@ -22,53 +24,9 @@ const getVarOrNum = (val)=>{
     if (isNaN(val)) {
         return val.split(/[\s<>,=()*/;{}%+-]+/).filter(s=>s!=='');
     }
-    return val;
+    return [];
 };
-function replaceVariables(value,dictinoary,bool)
-{
-    var ArrayOfTokens=getVarOrNum(value);
-    for (let i=0;i<ArrayOfTokens.length;i++)
-    {
-        var tok=ArrayOfTokens[i];
-        var tokInDic=tok;
-        if (dictinoary[tok]!=undefined) {
-            if (!(tokInDic in varMap))
-                tokInDic = dictinoary[tok];
-        }
-        value=value.replace(tok,tokInDic);
-    }
-    if (bool) {
-        return value;
-    }
-    value = replaceNumbers(value);
-    return value;
-}
-function replaceNumbers(value)
-{
-    if (isNaN(value)) {
-        var values = value.split(/[\s<>=]+/);
-        var tokens = value.split(/[^\s<>=]+/);
-        var toReturn = '';
-        for (var i = 0; i < values.length; i++) {
-            toReturn += evalPharse(values[i]) + tokens[i + 1];
-        }
-        return toReturn;
-    }
-    return value;
-}
-function evalPharse(value)
-{
-    var toReturn;
-    try
-    {
-        toReturn=eval(value);
-    }
-    catch(e)
-    {
-        toReturn=value;
-    }
-    return toReturn;
-}
+
 const replaceVals= (val,dic,isVar)=>{
     const vars=getVarOrNum(val);
     vars.forEach((item)=> {
@@ -90,28 +48,31 @@ const replaceNums= (val)=>{
     if(!isNaN(val)){
         return val;
     }
+    val=val.split(' ').join('');
     const vals=val.split(/[\s<>=]+/);
-    const operators=val.split(/^[\s<>=]+/);
+    const operators=val.split(/[^\s<>=]+/);
     let res='';
-    for(let i=0;i<vals.length;i++)
-    {
+    for(let i=0;i<vals.length;i++){
         try {
-            res += eval(vals[i]) + operators[i+1];
+            let caseTrue=eval(vals[i]) + operators[i+1];
+            if(/^[a-zA-Z]+$/.test(caseTrue))
+                caseTrue=val;
+            res+= caseTrue;
         }catch(e){
-            res += val;
+            res = val;
         }
     }
     return res;
 };
 
 const calPhrase = (prase,dic,lastIf)=> {
-    let val = replaceVariables(prase, dic);
+    let val = replaceVals(prase, dic);
     const arr = val.split(/[\s<>,=()*/;{}%+-]+/).filter(s => s !== ' ');
     arr.forEach((item) => {
         if (item in varMap)
             val = val.replace(item, varMap[item]);
     });
-    const caseTrue=eval(val);
+    let caseTrue= eval(val);
     return lastIf !== undefined ? lastIf ? true : false : caseTrue;
 };
 
@@ -125,6 +86,30 @@ const saveDicLine = (dic)=>{
 export const setTable=(t)=>{myTable=t;};
 
 export const setLineCount=(l)=>{lineCount=l;};
+
+export const parseGlobalVars= (parsedCode)=>{
+    parsedCode.body.forEach(item=>{
+        switch (item.type) {
+        case 'VariableDeclaration': parseDeclarations(item.declarations); break;
+        case 'ExpressionStatement': insertToMap(myParser.cases(item.expression).Name,myParser.cases(item.expression).Value); break;
+        }
+    });
+};
+
+const parseDeclarations = (declarations) =>{
+    declarations.forEach((decleration)=> {
+        insertToMap(cases(decleration.id),myParser.cases(decleration.init));
+    });
+};
+
+const insertToMap = (left,right) =>{
+    const varNum=getVarOrNum(right);
+    for (let i=0;i<varNum.length;i++)
+    {
+        right= varNum[i] in varMap ? right.replace(varNum[i],varMap[varNum[i]]) : right;
+    }
+    varMap[left]=replaceNums(right);
+};
 
 export const parseAllCode = (codeToParse,dic,lastIf) =>{
     codeToParse.body.forEach(item=>{
@@ -140,7 +125,7 @@ const elseIfState= (item,dic,lastIf)=>{
     ifState(item,dic,lastIf,'Else If Statement');
 };
 
-const ifState = (item,dic,lastIf,type)=>{
+const ifState =(item,dic,lastIf,type)=>{
     if (type===undefined)
         type='If Statement';
     const obj={Line: lineCount , Type:type, Name: '', Condition:cases(item.test,dic,lastIf), Value:''};
@@ -156,19 +141,21 @@ const ifState = (item,dic,lastIf,type)=>{
     dic=tempDic;
     if (item.alternate!=null)
     {
-        if (item.alternate.type=='IfStatement')
-            item.alternate.type='ElseIfStatment';
-        else {
-            const obj={Line: lineCount , Type:'Else Statement', Name: '', Condition:'', Value:''};
-            myTable.push(obj);
-            colorsMap.push(lastIf === false ? false : true);
-            saveDicLine(dic);
-            lineCount++;
-        }
-        //tempDic=dicToTemp(dic);
-        cases(item.alternate,dic,lastIf);
-        //dic=tempDic;
+        handleAlt(item,dic,lastIf);
     }
+};
+
+const handleAlt = (item,dic,lastIf)=>{
+    if (item.alternate.type=='IfStatement')
+        item.alternate.type='ElseIfStatment';
+    else {
+        const obj={Line: lineCount , Type:'Else Statement', Name: '', Condition:'', Value:''};
+        myTable.push(obj);
+        colorsMap.push(lastIf === false ? false : true);
+        saveDicLine(dic);
+        lineCount++;
+    }
+    cases(item.alternate,dic,lastIf);
 };
 
 const updateExp= (item)=>{
@@ -184,7 +171,7 @@ const assExp=(item,dic,lastif) =>{
     if(left in varMap)
         varMap[left]=right;
     addToDic(left,right,dic);
-    saveDicLine(dic)
+    saveDicLine(dic);
     lineCount++;
     return obj;
 };
@@ -198,6 +185,7 @@ const whileState=(item,dic,lastif) =>{
     saveDicLine(dic);
     lineCount++;
     parseAllCode(item.body,dic,lastif);
+    saveDicLine(dic);
     lineCount++;
 };
 
@@ -275,7 +263,7 @@ const allCases={
     'Identifier': (myCase)=> {return myCase.name;},
     'MemberExpression': (myCase)=> {return cases(myCase.object) + `[${cases(myCase.property)}]`;},
     'ForStatement': forState,
-    'Literal': (myCase)=> {return ''+myCase.value;},
+    'Literal': (myCase)=> {return isNaN(myCase.value) ? '\''+myCase.value+'\'' : myCase.value ;},
     'BinaryExpression': binaryExp,
     'UpdateExpression': updateExp,
     'AssignmentExpression':assExp,
@@ -283,13 +271,6 @@ const allCases={
     'ArrowFunctionExpression': fundecl
 };
 
-export const parserStart=(parsedCode)=>{
-    setLineCount(1);
-    setTable([]);
-    init();
-    parseAllCode(parsedCode);
-    return myTable;
-};
 
 const dicToTemp = (dic)=> {
     const temp=[];
@@ -299,27 +280,27 @@ const dicToTemp = (dic)=> {
 };
 
 const createFunctionColor=(code)=>{
-    const getValid= (index,sen)=>replaceVariables(sen,linesDic[index+1],true);
+    const getValid= (index,sen)=>replaceVals(sen,linesDic[index+1],true);
     let lines=code.split(/\r?\n/);
     const res=[];
     let indx=0;
     for(let i=0;i<lines.length;i++){
-        let sentence=lines[i].replace('\t','').replace(' ','');
-        if(isLineValid(sentence)){
+        let sentence=lines[i].replace('\t','');
+        if(isLineInValid(sentence)){
             indx++;
             res.push(sentence);
         }
         else if(isPred(sentence))
-            res.push(getValid(i-indx,sentence));
+            res.push(getValid(i-indx ,sentence));
     }
     return res;
 };
 
-const isLineValid= (sen)=> sen==='{' || sen==='' || sen==='}';
+const isLineInValid= (sen)=> sen==='{' || sen==='' || sen==='}' || sen.split(' ').join('')===''|| sen.split(' ').join('')==='}';
 
 const isPred = (sen)=>{
     const isIf=sent=> sent.includes('else')||sent.includes('if');
-    const getExpression= sent=> sent.includes('=') ? sent.split('').filter(s=>s!==' ')[0] : '';
+    const getExpression= sent=> sent.includes('=') ? getVarOrNum(sent).filter(s=>s!=='')[0] : '';
     if(sen.includes('function') || getExpression(sen) in varMap)
         return true;
     return isIf(sen) || sen.includes('return') || sen.includes('while');
@@ -332,13 +313,12 @@ const argToDic = (left,right)=>{
     else{
         right=right.substring(1,right.length-1);
         const vals=right.split(',');
-        vals.forEach(val=>argToDic(left,val));
+        vals.forEach((val,index)=>argToDic(left+'['+index+']',val));
     }
 };
 
 export const argsParser= sen =>{
-    varMap=[];
-    const res= sen.split(/,(?![^\(\[]*[\]\)])/g);
+    const res= sen.split(/,(?![^([]*[\])])/g).filter(s=>s!=='');
     res.forEach((varible)=> {
         const exp=varible.split('=');
         varible = exp[0];
@@ -350,8 +330,9 @@ export const subtitution = (code,parsed)=>{
     setLineCount(1);
     setTable([]);
     init();
-    setVarMap(varMap);
     const dic=[];
+    parseGlobalVars(parsed);
+    varMap.forEach(variable=> dic[variable]=varMap[variable]);
     parseAllCode(parsed,dic,undefined);
     return createFunctionColor(code);
 };
