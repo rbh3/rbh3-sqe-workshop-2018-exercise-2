@@ -1,8 +1,7 @@
 import * as myParser from './myParser';
 
 let lineCount=1;
-let myTable=[];
-let varMap;
+let varMap=[];
 let linesDic;
 let colorsMap;
 
@@ -44,6 +43,7 @@ const replaceVals= (val,dic,isVar)=>{
     return val;
 };
 
+
 const replaceNums= (val)=>{
     if(!isNaN(val)){
         return val;
@@ -73,7 +73,7 @@ const calPhrase = (prase,dic,lastIf)=> {
             val = val.replace(item, varMap[item]);
     });
     let caseTrue= eval(val);
-    return lastIf !== undefined ? lastIf ? true : false : caseTrue;
+    return lastIf !== undefined ? lastIf ? caseTrue : false : caseTrue;
 };
 
 const saveDicLine = (dic)=>{
@@ -82,8 +82,6 @@ const saveDicLine = (dic)=>{
         newDic[k]=dic[k];
     linesDic[lineCount]=newDic;
 };
-
-export const setTable=(t)=>{myTable=t;};
 
 export const setLineCount=(l)=>{lineCount=l;};
 
@@ -129,7 +127,6 @@ const ifState =(item,dic,lastIf,type)=>{
     if (type===undefined)
         type='If Statement';
     const obj={Line: lineCount , Type:type, Name: '', Condition:cases(item.test,dic,lastIf), Value:''};
-    myTable.push(obj);
     const caseTrue=calPhrase(obj.Condition,dic,lastIf);
     colorsMap.push(caseTrue);
     if(caseTrue)
@@ -149,8 +146,6 @@ const handleAlt = (item,dic,lastIf)=>{
     if (item.alternate.type=='IfStatement')
         item.alternate.type='ElseIfStatment';
     else {
-        const obj={Line: lineCount , Type:'Else Statement', Name: '', Condition:'', Value:''};
-        myTable.push(obj);
         colorsMap.push(lastIf === false ? false : true);
         saveDicLine(dic);
         lineCount++;
@@ -158,18 +153,10 @@ const handleAlt = (item,dic,lastIf)=>{
     cases(item.alternate,dic,lastIf);
 };
 
-const updateExp= (item)=>{
-    myTable.push({Line: lineCount,Type: item.type, Name: updateState(item),Condition: '',Value: ''});
-    lineCount++;
-};
-
 const assExp=(item,dic,lastif) =>{
     const left=cases(item.left, dic,lastif);
     const right= cases(item.right, dic,lastif);
     const obj={Line: lineCount,Type: item.type,Name: left ,Condition: '',Value: right};
-    myTable.push(obj);
-    if(left in varMap)
-        varMap[left]=right;
     addToDic(left,right,dic);
     saveDicLine(dic);
     lineCount++;
@@ -181,10 +168,9 @@ const expState=(item,dic,lastif) =>{
 };
 
 const whileState=(item,dic,lastif) =>{
-    myTable.push({Line: lineCount , Type: item.type, Name: '', Condition: cases(item.test,dic,lastif), Value:''});
     saveDicLine(dic);
     lineCount++;
-    parseAllCode(item.body,dic,lastif);
+    cases(item.body,dic,lastif);
     saveDicLine(dic);
     lineCount++;
 };
@@ -197,9 +183,7 @@ const binaryExp= (item,dic,lastIf)=>{
 };
 
 const fundecl= (item,dic,lastIf)=>{
-    myTable.push({Line: lineCount , Type: item.type, Name: cases(item.id,dic,lastIf), Condition:'' , Value:''});
-    item.params.forEach((param)=>{ 
-        myTable.push({Line: lineCount , Type:'Variable Declaration', Name: cases(param,dic), Condition:'' , Value:''});
+    item.params.forEach((param)=>{
         dic[cases(param,dic)]=cases(param,dic);
     });
     saveDicLine(dic);
@@ -216,7 +200,6 @@ const vardecl= (item, dic, lastif)=>{
             Condition: '',
             Value: decleration.init ? cases(decleration.init,dic,lastif) : null
         };
-        myTable.push(obj);
         addToDic(obj.Name,obj.Value,dic);
     });
     saveDicLine(dic);
@@ -224,7 +207,6 @@ const vardecl= (item, dic, lastif)=>{
 };
 
 const returnState=(item,dic) =>{
-    myTable.push({Line: lineCount , Type: item.type, Name: '', Condition:'' , Value: cases(item.argument)});
     saveDicLine(dic);
     lineCount++;
 };
@@ -236,21 +218,6 @@ const unaryExp=(item) =>{
     return expression;
 };
 
-const forState= (item)=>{
-    let expression= item.init.kind+' '+ cases(item.init.declarations[0].id)+ '='+item.init.declarations[0].init.value+'; ';
-    expression+=cases(item.test)+'; ';
-    expression+=updateState(item.update);
-    myTable.push({Line: lineCount , Type: item.type, Name: '', Condition: expression , Value: ''});
-    lineCount++;
-    parseAllCode(item.body);
-};
-
-const  updateState=(item)=> {
-    let opertator = item.operator;
-    item.prefix ? opertator = opertator + cases(item.argument) : opertator = cases(item.argument) + opertator;
-    return opertator;
-};
-
 const allCases={
     'FunctionDeclaration': fundecl,
     'VariableDeclaration': vardecl,
@@ -258,16 +225,14 @@ const allCases={
     'WhileStatement': whileState,
     'IfStatement': ifState,
     'ElseIfStatment': elseIfState,
+    'UnaryExpression':unaryExp,
     'ReturnStatement': returnState,
     'BlockStatement': (myCase,dic,lastif)=>parseAllCode(myCase,dic,lastif),
     'Identifier': (myCase)=> {return myCase.name;},
     'MemberExpression': (myCase)=> {return cases(myCase.object) + `[${cases(myCase.property)}]`;},
-    'ForStatement': forState,
     'Literal': (myCase)=> {return isNaN(myCase.value) ? '\''+myCase.value+'\'' : myCase.value ;},
     'BinaryExpression': binaryExp,
-    'UpdateExpression': updateExp,
     'AssignmentExpression':assExp,
-    'UnaryExpression':unaryExp,
     'ArrowFunctionExpression': fundecl
 };
 
@@ -326,13 +291,19 @@ export const argsParser= sen =>{
     });
 };
 
+function copyInitVarMap(dic) {
+    for(let vari in varMap) {
+        dic[vari] =varMap[vari];
+    }
+    return dic;
+}
+
 export const subtitution = (code,parsed)=>{
     setLineCount(1);
-    setTable([]);
     init();
-    const dic=[];
+    let dic=[];
     parseGlobalVars(parsed);
-    varMap.forEach(variable=> dic[variable]=varMap[variable]);
+    dic= copyInitVarMap(dic);
     parseAllCode(parsed,dic,undefined);
     return createFunctionColor(code);
 };

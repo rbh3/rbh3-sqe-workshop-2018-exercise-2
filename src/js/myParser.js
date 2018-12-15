@@ -6,9 +6,9 @@ const assExp=(item) =>{
     return {Name: cases(item.left),Value: cases(item.right)};
 };
 
-const expState=(item) =>{
-    cases(item.expression);
-};
+// const expState=(item) =>{
+//     cases(item.expression);
+// };
 
 const binaryExp= (item)=>{
     const left= cases(item.left);
@@ -28,13 +28,12 @@ const unaryExp=(item) =>{
 
 
 const allCases={
-    'ExpressionStatement': expState,
     'Identifier': (myCase)=> {return myCase.name;},
     'MemberExpression': (myCase)=> {return myCase.object.name + `[${cases(myCase.property)}]`;},
     'Literal': (myCase)=> {return isNaN(myCase.value) ? '\''+myCase.value+'\'' : myCase.value ;},
     'BinaryExpression': binaryExp,
     'AssignmentExpression':assExp,
-    'UnaryExpression':unaryExp,
+    'UnaryExpression':unaryExp
 };
 
 

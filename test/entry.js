@@ -1,3 +1,3 @@
 import './code-analyzer.test';
-import './myPaser.test';
+import './symbolic.test';
 
