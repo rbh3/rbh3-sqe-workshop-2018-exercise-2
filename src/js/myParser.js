@@ -1,4 +1,6 @@
 export const cases= (myCase)=>{
+    if(myCase===null)
+        return null;
     return allCases[myCase.type](myCase);
 };
 

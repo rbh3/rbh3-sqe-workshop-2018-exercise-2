@@ -126,6 +126,23 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
+    it('check with globals in input', () => {
+        const input='let w;\n' +
+            'let f;\n' +
+            'function x(){\n' +
+            'let y;\n' +
+            'if(w==1){\n' +
+            'return w;\n' +
+            '}\n' +
+            '}';
+        symbolic.argsParser('w=1')
+        assert.equal(symbolic.subtitution(input,parseCode(input)).length, 5);
+        assert.deepEqual(
+            symbolic.getColorsMap(),
+            [true]
+        );
+    });
+
 });
 
 

@@ -106,6 +106,8 @@ const insertToMap = (left,right) =>{
     {
         right= varNum[i] in varMap ? right.replace(varNum[i],varMap[varNum[i]]) : right;
     }
+    if(right===null)
+        right= left in varMap ? varMap[left] : right;
     varMap[left]=replaceNums(right);
 };
 
