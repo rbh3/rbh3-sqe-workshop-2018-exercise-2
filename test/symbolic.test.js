@@ -7,7 +7,7 @@ describe('Tests for symbolic functions', () => {
         symbolic.initVarMap();
     });
 
-    it('check colors - if alt and input', () => {
+    it(' 1. check colors - if alt and input', () => {
         const input='function f(x){\n' +
             '    if (x > 2) {\n' +
             '        x = x + 1;\n' +
@@ -29,7 +29,7 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it('check colors - if alt and input', () => {
+    it('2. check colors - if alt and input', () => {
         const input='function f(x){\n' +
             '    if (x > 2) {\n' +
             '        x = x + 1;\n' +
@@ -51,7 +51,7 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it('check complex if with strings and array', () => {
+    it('3. check complex if with strings and array', () => {
         const input='let w = 1;\n' +
             'function foo(x, y, z){\n' +
             ' while(x<2){\n' +
@@ -83,7 +83,7 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it('check with global vars', () => {
+    it('4. check with global vars', () => {
         const input='let w=2;\n' +
             '\n' +
             '            function f(x){\n' +
@@ -106,7 +106,7 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it('check with global arr', () => {
+    it('5. check with global arr', () => {
         const input='let w=a[1]\n' +
             'w=\'ravid\'\n' +
             'let xs2=-1;\n' +
@@ -118,7 +118,7 @@ describe('Tests for symbolic functions', () => {
             'return xs2;\n' +
             '}\n' +
             '}';
-        symbolic.argsParser('')
+        symbolic.argsParser('');
         assert.equal(symbolic.subtitution(input,parseCode(input)).length, 8);
         assert.deepEqual(
             symbolic.getColorsMap(),
@@ -126,7 +126,27 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it('check with globals in input', () => {
+    it('6. check with global arr', () => {
+        const input='let w=a[1]\n' +
+            'w=\'ravid\'\n' +
+            'let xs2=-1;\n' +
+            'xs2=xs2-1;\n' +
+            'xs2=xs2*-1;\n' +
+            'function foo(){\n' +
+            'let x\n' +
+            'if(xs2==2){\n' +
+            'return xs2;\n' +
+            '}\n' +
+            '}';
+        symbolic.argsParser('a=[1,2]');
+        assert.equal(symbolic.subtitution(input,parseCode(input)).length, 8);
+        assert.deepEqual(
+            symbolic.getColorsMap(),
+            [true]
+        );
+    });
+
+    it('7. check with globals in input', () => {
         const input='let w;\n' +
             'let f;\n' +
             'function x(){\n' +
@@ -143,6 +163,68 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
+    it('8. check with globals in input', () => {
+        const input='let w;\n' +
+            'let f;\n' +
+            'function x(){\n' +
+            'let y;\n' +
+            'if(w==1){\n' +
+            'return w;\n' +
+            '}\n' +
+            '}';
+        symbolic.argsParser('w=10')
+        assert.equal(symbolic.subtitution(input,parseCode(input)).length, 5);
+        assert.deepEqual(
+            symbolic.getColorsMap(),
+            [false]
+        );
+    });
+
+
+    it('9. check with global vars', () => {
+        const input='let w=2;\n' +
+            '\n' +
+            '            function f(x){\n' +
+            '                if (x > 2) {\n' +
+            '                    x = 12;\n' +
+            '                } else if (a == w) {\n' +
+            '                    x = x - 1;\n' +
+            '                } else {\n' +
+            '                    x = x * 3;\n' +
+            '            }\n' +
+            '                return x;\n' +
+            '            }\n' +
+            'let a=12;\n' +
+            '            w=w+10;';
+        symbolic.argsParser('x=15')
+        assert.equal(symbolic.subtitution(input,parseCode(input)).length,  12);
+        assert.deepEqual(
+            symbolic.getColorsMap(),
+            [true,false,false]
+        );
+    });
+
+    it(' 10. check colors - if alt and input', () => {
+        const input='function f(x){\n' +
+            '    if (x > 2) {\n' +
+            '        x = x + 1;\n' +
+            '    } else if (x == 1) {\n' +
+            '        x = x - 1;\n' +
+            '    } else {\n' +
+            '        x = x * 3;\n' +
+            '    }\n' +
+            '    return x;\n' +
+            '}';
+        symbolic.argsParser('x=-1')
+        assert.equal(
+            symbolic.subtitution(input,parseCode(input)).length,
+            10
+        );
+        assert.deepEqual(
+            symbolic.getColorsMap(),
+            [false,false,true]
+        );
+    });
 });
 
 
