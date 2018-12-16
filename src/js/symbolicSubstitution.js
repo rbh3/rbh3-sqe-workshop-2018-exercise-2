@@ -288,8 +288,8 @@ export const argsParser= sen =>{
     const res= sen.split(/,(?![^([]*[\])])/g).filter(s=>s!=='');
     res.forEach((varible)=> {
         const exp=varible.split('=');
-        varible = exp[0];
-        argToDic(varible,exp[1]);
+        varible = exp[0].split(' ').join('');
+        argToDic(varible,exp[1].split(' ').join(''));
     });
 };
 
