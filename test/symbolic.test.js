@@ -55,12 +55,12 @@ describe('Tests for symbolic functions', () => {
         const input='let w = 1;\n' +
             'function foo(x, y, z){\n' +
             ' while(x<2){\n' +
-            '  let g=\'king\';\n' +
-            '  let g2 = true;\n' +
-            '  if(g== z[2]){\n' +
+            '  let gavri=\'ravid\';\n' +
+            '  let bol = true;\n' +
+            '  if(gavri== z[2]){\n' +
             '    return y + x * 2\n' +
-            '  }else if(g== \'king\'){\n' +
-            '    if(g2 == false){\n' +
+            '  }else if(gavri== \'ravid\'){\n' +
+            '    if(bol == false){\n' +
             '     return w + x;\n' +
             '    }else{\n' +
             '     w = 2;\n' +
