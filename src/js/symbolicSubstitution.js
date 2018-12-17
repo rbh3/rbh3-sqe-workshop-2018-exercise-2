@@ -65,15 +65,15 @@ const replaceNums= (val)=>{
     return res;
 };
 
-const calPhrase = (prase,dic,lastIf)=> {
+const calPhrase = (prase,dic,isIfLast)=> {
     let val = replaceVals(prase, dic);
-    const arr = val.split(/[\s<>,=()*/;{}%+-]+/).filter(s => s !== ' ');
+    const arr = val.split(/[\s<>,!=()*/;{}%+-]+/).filter(s => s !== ' ');
     arr.forEach((item) => {
         if (item in varMap)
             val = val.replace(item, varMap[item]);
     });
     let caseTrue= eval(val);
-    return lastIf !== undefined ? lastIf ? caseTrue : false : caseTrue;
+    return isIfLast !== undefined ? isIfLast ? caseTrue : false : caseTrue;
 };
 
 const saveDicLine = (dic)=>{
@@ -111,28 +111,28 @@ const insertToMap = (left,right) =>{
     varMap[left]=replaceNums(right);
 };
 
-export const parseAllCode = (codeToParse,dic,lastIf) =>{
+export const parseAllCode = (codeToParse,dic,isIfLast) =>{
     codeToParse.body.forEach(item=>{
-        cases(item,dic,lastIf);
+        cases(item,dic,isIfLast);
     });
 };
 
-const cases= (myCase, dic, lastIf)=>{
-    return allCases[myCase.type](myCase, dic, lastIf);
+const cases= (myCase, dic, isIfLast)=>{
+    return allCases[myCase.type](myCase, dic, isIfLast);
 };
 
-const elseIfState= (item,dic,lastIf)=>{
-    ifState(item,dic,lastIf,'Else If Statement');
+const elseIfState= (item,dic,isIfLast)=>{
+    ifState(item,dic,isIfLast,'Else If Statement');
 };
 
-const ifState =(item,dic,lastIf,type)=>{
+const ifState =(item,dic,isIfLast,type)=>{
     if (type===undefined)
         type='If Statement';
-    const obj={Line: lineCount , Type:type, Name: '', Condition:cases(item.test,dic,lastIf), Value:''};
-    const caseTrue=calPhrase(obj.Condition,dic,lastIf);
+    const obj={Line: lineCount , Type:type, Name: '', Condition:cases(item.test,dic,isIfLast), Value:''};
+    const caseTrue=calPhrase(obj.Condition,dic,isIfLast);
     colorsMap.push(caseTrue);
     if(caseTrue)
-        lastIf=false;
+        isIfLast=false;
     saveDicLine(dic);
     lineCount++;
     let tempDic=dicToTemp(dic);
@@ -140,24 +140,24 @@ const ifState =(item,dic,lastIf,type)=>{
     dic=tempDic;
     if (item.alternate!=null)
     {
-        handleAlt(item,dic,lastIf);
+        handleAlt(item,dic,isIfLast);
     }
 };
 
-const handleAlt = (item,dic,lastIf)=>{
+const handleAlt = (item,dic,isIfLast)=>{
     if (item.alternate.type=='IfStatement')
         item.alternate.type='ElseIfStatment';
     else {
-        colorsMap.push(lastIf === false ? false : true);
+        colorsMap.push(isIfLast === false ? false : true);
         saveDicLine(dic);
         lineCount++;
     }
-    cases(item.alternate,dic,lastIf);
+    cases(item.alternate,dic,isIfLast);
 };
 
-const assExp=(item,dic,lastif) =>{
-    const left=cases(item.left, dic,lastif);
-    const right= cases(item.right, dic,lastif);
+const assExp=(item,dic,isIfLast) =>{
+    const left=cases(item.left, dic,isIfLast);
+    const right= cases(item.right, dic,isIfLast);
     const obj={Line: lineCount,Type: item.type,Name: left ,Condition: '',Value: right};
     addToDic(left,right,dic);
     saveDicLine(dic);
@@ -165,42 +165,42 @@ const assExp=(item,dic,lastif) =>{
     return obj;
 };
 
-const expState=(item,dic,lastif) =>{
-    cases(item.expression,dic,lastif);
+const expState=(item,dic,isIfLast) =>{
+    cases(item.expression,dic,isIfLast);
 };
 
-const whileState=(item,dic,lastif) =>{
+const whileState=(item,dic,isIfLast) =>{
     saveDicLine(dic);
     lineCount++;
-    cases(item.body,dic,lastif);
+    cases(item.body,dic,isIfLast);
     saveDicLine(dic);
     lineCount++;
 };
 
-const binaryExp= (item,dic,lastIf)=>{
-    const left= cases(item.left,dic,lastIf);
-    const right= cases(item.right,dic,lastIf);
+const binaryExp= (item,dic,isIfLast)=>{
+    const left= cases(item.left,dic,isIfLast);
+    const right= cases(item.right,dic,isIfLast);
     const expression= '('+left+' '+item.operator+' '+right+')';
     return expression;
 };
 
-const fundecl= (item,dic,lastIf)=>{
+const fundecl= (item,dic,isIfLast)=>{
     item.params.forEach((param)=>{
         dic[cases(param,dic)]=cases(param,dic);
     });
     saveDicLine(dic);
     lineCount++;
-    cases(item.body,dic,lastIf);
+    cases(item.body,dic,isIfLast);
 };
 
-const vardecl= (item, dic, lastif)=>{
+const vardecl= (item, dic, isIfLast)=>{
     item.declarations.forEach((decleration)=> {
         const obj={
             Line: lineCount,
             Type: 'Variable Declaration',
-            Name: cases(decleration.id,dic,lastif),
+            Name: cases(decleration.id,dic,isIfLast),
             Condition: '',
-            Value: decleration.init ? cases(decleration.init,dic,lastif) : null
+            Value: decleration.init ? cases(decleration.init,dic,isIfLast) : null
         };
         addToDic(obj.Name,obj.Value,dic);
     });
@@ -229,7 +229,7 @@ const allCases={
     'ElseIfStatment': elseIfState,
     'UnaryExpression':unaryExp,
     'ReturnStatement': returnState,
-    'BlockStatement': (myCase,dic,lastif)=>parseAllCode(myCase,dic,lastif),
+    'BlockStatement': (myCase,dic,isIfLast)=>parseAllCode(myCase,dic,isIfLast),
     'Identifier': (myCase)=> {return myCase.name;},
     'MemberExpression': (myCase)=> {return cases(myCase.object) + `[${cases(myCase.property)}]`;},
     'Literal': (myCase)=> {return isNaN(myCase.value) ? '\''+myCase.value+'\'' : myCase.value ;},
@@ -293,12 +293,12 @@ export const argsParser= sen =>{
     });
 };
 
-function copyInitVarMap(dic) {
+const copyInitVarMap = (dic)=> {
     for(let vari in varMap) {
         dic[vari] =varMap[vari];
     }
     return dic;
-}
+};
 
 export const subtitution = (code,parsed)=>{
     setLineCount(1);
