@@ -235,7 +235,8 @@ const allCases={
     'Literal': (myCase)=> {return isNaN(myCase.value) ? '\''+myCase.value+'\'' : myCase.value ;},
     'BinaryExpression': binaryExp,
     'AssignmentExpression':assExp,
-    'ArrowFunctionExpression': fundecl
+    'ArrowFunctionExpression': fundecl,
+    'LogicalExpression': binaryExp
 };
 
 

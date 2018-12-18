@@ -8,10 +8,6 @@ const assExp=(item) =>{
     return {Name: cases(item.left),Value: cases(item.right)};
 };
 
-// const expState=(item) =>{
-//     cases(item.expression);
-// };
-
 const binaryExp= (item)=>{
     const left= cases(item.left);
     const right= cases(item.right);
