@@ -204,11 +204,11 @@ describe('Tests for symbolic functions', () => {
         );
     });
 
-    it(' 10. check colors - if alt and input', () => {
+    it(' 10. check colors - if with logic exp alt and input', () => {
         const input='function f(x){\n' +
             '    if (x > 2) {\n' +
             '        x = x + 1;\n' +
-            '    } else if (x == 1) {\n' +
+            '    } else if (x == 1 || x==-1) {\n' +
             '        x = x - 1;\n' +
             '    } else {\n' +
             '        x = x * 3;\n' +
@@ -222,7 +222,7 @@ describe('Tests for symbolic functions', () => {
         );
         assert.deepEqual(
             symbolic.getColorsMap(),
-            [false,false,true]
+            [false,true,false]
         );
     });
 });
